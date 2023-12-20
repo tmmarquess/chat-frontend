@@ -1,4 +1,6 @@
 import React from "react"
+import { AiOutlineSearch, AiFillBell, AiFillCaretDown } from "react-icons/ai";
+import Thiago from '../../img/Thiago.png'
 import { SearchPeople, 
         Sidebar, 
         Container, 
@@ -9,7 +11,15 @@ import { SearchPeople,
         ButtonGroup, 
         ContainerBar, 
         ContactContainer ,
-        ChatTitle
+        ChatTitle,
+        SearchContainer,
+        TitleSearch,
+        Notification,
+        ProfileButton,
+        Image, 
+        Img,
+        NotifSymbol,
+        CaretSymbol
     } from "./style"
 
 export function Chat(){
@@ -19,7 +29,23 @@ export function Chat(){
         <Container>
             <SearchPeople>
                 <Decoration>
-                    Search User
+                    <SearchContainer>
+                        <AiOutlineSearch />
+                        <TitleSearch>Search User</TitleSearch>
+                    </SearchContainer>
+                    <Notification>
+                        <NotifSymbol>
+                            <AiFillBell />
+                        </NotifSymbol>
+                        <ProfileButton>
+                            <Image>
+                                <Img src={Thiago}/>
+                            </Image>
+                            <CaretSymbol>
+                                <AiFillCaretDown />
+                            </CaretSymbol>
+                        </ProfileButton>
+                    </Notification>
                 </Decoration>
             </SearchPeople>
             <ContentCont>
