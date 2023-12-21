@@ -1,4 +1,4 @@
-import styled from 'styled-components'
+import styled from "styled-components";
 
 export const Container = styled.div`
   background: -webkit-linear-gradient(left, #0ebeff, #ff42b3);
@@ -74,4 +74,25 @@ export const ChatTitle = styled.p`
   font-size: 30px;
   display: inline-block;
   margin-top: 220px;
+`
+
+export const PeopleChat  = styled.button`
+    margin-top: 5px;
+    margin-left: 15px;
+    width: 358px;
+    height: 30px;
+    display: flex;
+    border-radius: 5px;
+    background: #008489;
+    color: white;
+    font-family: Poppins;
+    font-size: 16px;
+    padding-top: 5px;
+    padding-left: 10px;
+    border: none;
+
+    &:hover {
+      background-color: #008470;
+      cursor: pointer;
+    }
 `
