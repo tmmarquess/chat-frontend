@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from 'react-router-dom';
 import { Header } from "../../components/Header"
+import { ChatBox } from "../../components/ChatBox";
 import { SearchPeople, 
         Sidebar, 
         Container, 
@@ -17,6 +18,8 @@ import { SearchPeople,
 export function SingleChat(){
     const { nome } = useParams();
     const [nomesArmazenados, setNomesArmazenados] = useState([]);
+    const [chatAtivo, setChatAtivo] = useState(null);
+    const [mensagens, setMensagens] = useState([]);
 
     useEffect(() => {
         const nomesLocalStorage = JSON.parse(localStorage.getItem('nomes')) || [];
@@ -31,6 +34,15 @@ export function SingleChat(){
         }
     }, [nome, nomesArmazenados]);
 
+    const toggleChat = (nomePessoa) => {
+        setChatAtivo(chatAtivo === nomePessoa ? null : nomePessoa);
+      };
+    
+      const enviarMensagem = (nomePessoa, mensagem) => {
+        // Lógica para enviar a mensagem, se necessário
+        console.log(`Mensagem enviada para ${nomePessoa}: ${mensagem}`);
+      };
+
     return(
         <>
         <Container>
@@ -44,13 +56,25 @@ export function SingleChat(){
                         <ButtonGroup>New Group Chat +</ButtonGroup> 
                     </ContainerBar>  
                     <ContactContainer>
-                        {nomesArmazenados.map((nomeArmazenado, index) => (
-                            <PeopleChat key={index}>{nomeArmazenado}</PeopleChat>
+                        {nomesArmazenados.map((pessoa, index) => (
+                            <div key={index}>
+                                <PeopleChat onClick={() => toggleChat(pessoa)}>{pessoa}</PeopleChat>
+                            </div>
                         ))}
                     </ContactContainer>
                 </Sidebar>
                 <ChatScreen>
-                    <ChatTitle>Click on a user to start chatting</ChatTitle>
+                    {nomesArmazenados.map((pessoa, index) => (
+                            <div key={index}>
+                                {chatAtivo === pessoa && (
+                                    <ChatBox
+                                        nome={pessoa}
+                                        onClose={() => toggleChat(null)}
+                                        enviarMensagem={enviarMensagem}
+                                    />
+                                )}
+                            </div>
+                        ))}
                 </ChatScreen>
             </ContentCont>
         </Container>

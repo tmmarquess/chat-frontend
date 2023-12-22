@@ -50,3 +50,37 @@ export const CaretSymbol = styled.div`
 export const SearchContainer = styled.div`
   margin-bottom: 30px;
 `
+
+export const DropdownContainer = styled.div`
+  position: relative;
+  display: inline-block;
+`;
+
+export const DropdownContent = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  z-index: 1;
+`;
+
+export const StyledList = styled.ul`
+  top: 100%;
+  left: 0;
+  width: 100px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-top: none;
+  cursor: pointer;
+  background-color: white;
+  transition: background-color 0.3s;
+
+  &:hover {
+      background-color: #f0f0f0;
+    }
+`;
