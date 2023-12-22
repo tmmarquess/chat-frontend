@@ -11,7 +11,6 @@ import { SearchPeople,
         ButtonGroup, 
         ContainerBar, 
         ContactContainer ,
-        ChatTitle,
         PeopleChat,
     } from "./style"
 
@@ -19,12 +18,11 @@ export function SingleChat(){
     const { nome } = useParams();
     const [nomesArmazenados, setNomesArmazenados] = useState([]);
     const [chatAtivo, setChatAtivo] = useState(null);
-    const [mensagens, setMensagens] = useState([]);
 
     useEffect(() => {
         const nomesLocalStorage = JSON.parse(localStorage.getItem('nomes')) || [];
         setNomesArmazenados(nomesLocalStorage);
-    }, []); // Executar apenas uma vez no carregamento da página
+    }, []); // Executar apenas uma vez no carregamento da página (esse caralho ta dando erro pqp)
 
     useEffect(() => {
         if (nome && !nomesArmazenados.includes(nome)) {
@@ -38,11 +36,6 @@ export function SingleChat(){
         setChatAtivo(chatAtivo === nomePessoa ? null : nomePessoa);
       };
     
-      const enviarMensagem = (nomePessoa, mensagem) => {
-        // Lógica para enviar a mensagem, se necessário
-        console.log(`Mensagem enviada para ${nomePessoa}: ${mensagem}`);
-      };
-
     return(
         <>
         <Container>
@@ -70,7 +63,6 @@ export function SingleChat(){
                                     <ChatBox
                                         nome={pessoa}
                                         onClose={() => toggleChat(null)}
-                                        enviarMensagem={enviarMensagem}
                                     />
                                 )}
                             </div>

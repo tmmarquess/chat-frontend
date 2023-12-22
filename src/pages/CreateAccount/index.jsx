@@ -28,7 +28,7 @@ export function createAccount() {
 
                 <RegisterTitle>
                     Already have an account? 
-                    <Link to="/login" style={{
+                    <Link to="/" style={{
                         textDecoration: 'none',
                         color: 'black',
                         fontWeight:'600',

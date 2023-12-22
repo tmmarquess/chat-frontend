@@ -7,7 +7,9 @@ import {
     InputChat,
     MessageChat,
     NameContainer,
-    Name 
+    Name,
+    BotMessage,
+    UsuarioMessage
   } from './style';
 
 export function ChatBox () {
@@ -20,9 +22,9 @@ export function ChatBox () {
   };
 
   const enviarMensagemBot = () => {
-    // Simulação de uma resposta do bot após um pequeno atraso
+    // Simulação de uma resposta do bot com um delay
     setTimeout(() => {
-      const respostaBot = 'Resposta do Bot: Olá! Como posso ajudar?';
+      const respostaBot = 'Thiago eu n aguento mais, a minha costa ta latejando aaaa eu quero férias';
       setMensagens((prevMensagens) => [
         ...prevMensagens,
         { texto: respostaBot, deUsuario: false },
@@ -43,15 +45,20 @@ export function ChatBox () {
   }, []);
 
   return (
+    <>
     <ChatBoxContainer>
       <NameContainer>
         <Name>{nome}</Name>
       </NameContainer>
       <MessageChat>
         {mensagens.map((mensagem, index) => (
-          <div key={index} className={mensagem.deUsuario ? 'usuario' : 'bot'}>
-            {mensagem.texto}
-          </div>
+          <React.Fragment key={index}> 
+            {mensagem.deUsuario ? (
+              <UsuarioMessage>{mensagem.texto}</UsuarioMessage>
+            ) : (
+              <BotMessage>{mensagem.texto}</BotMessage>
+            )}
+          </React.Fragment>
         ))}
       </MessageChat>
       <InputChat>
@@ -63,6 +70,7 @@ export function ChatBox () {
         <MessageButton onClick={handleEnviarMensagem}>Enviar</MessageButton>
       </InputChat>
     </ChatBoxContainer>
+    </>
   );
 };
 

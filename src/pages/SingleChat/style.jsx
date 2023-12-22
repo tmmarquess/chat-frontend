@@ -6,6 +6,10 @@ export const Container = styled.div`
   font-family: Poppins;
   font-style: normal;
   font-weight: 400;
+  position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%)
 `
 
 export const SearchPeople = styled.div`
@@ -68,12 +72,6 @@ export const ChatScreen = styled.div`
   background: #fff;
   width: 860px;
   text-align: center;
-`
-
-export const ChatTitle = styled.p`
-  font-size: 30px;
-  display: inline-block;
-  margin-top: 220px;
 `
 
 export const PeopleChat  = styled.button`

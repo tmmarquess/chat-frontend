@@ -9,8 +9,8 @@ export function RoutesApp() {
     return (
       <BrowserRouter>
         <Routes>
-          <Route Component={Chat} path="/"/>
-          <Route Component={Login} path="/login"/>
+          <Route Component={Chat} path="/chat"/>
+          <Route Component={Login} path="/"/>
           <Route Component={createAccount} path="/createAccount"/>
           <Route Component={SingleChat} path="/singlechat/:nome"/>
         </Routes>            
