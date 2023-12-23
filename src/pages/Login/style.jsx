@@ -21,6 +21,9 @@ export const LoginContainer = styled.div`
     transform: translate(-50%, -50%)
 `
 
+export const Form = styled.form`
+`
+
 export const Title = styled.p`
   margin-top: 17px;
   font-size: 35px;
