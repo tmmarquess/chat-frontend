@@ -3,12 +3,12 @@ import Thiago from '../../img/Thiago.png'
 import { SearchBar } from "../../components/SearchBar"
 import { Link } from "react-router-dom";
 import { CaretSymbol } from "./style";
-import {AiFillCaretDown } from "react-icons/ai";
+import { AiFillCaretDown } from "react-icons/ai";
 
-import { 
-    Decoration, 
+import {
+    Decoration,
     ProfileButton,
-    Image, 
+    Image,
     Img,
     SearchContainer,
     DropdownContainer,
@@ -16,37 +16,40 @@ import {
     StyledList,
 } from "./style"
 
-export function Header(){
+export function Header() {
 
     const [isDropdownOpen, setDropdownOpen] = useState(false);
 
     const toggleDropdown = () => {
         setDropdownOpen(!isDropdownOpen);
     };
+    const handleLogout = () => {
+        localStorage.clear();
+    }
 
-    return(
+    return (
         <>
             <Decoration>
                 <SearchContainer>
-                    <SearchBar/>
+                    <SearchBar />
                 </SearchContainer>
                 <DropdownContainer>
-                    <ProfileButton  onClick={toggleDropdown}>
+                    <ProfileButton onClick={toggleDropdown}>
                         <Image>
-                            <Img src={Thiago}/>
+                            <Img src={Thiago} />
                         </Image>
                         <CaretSymbol>
                             <AiFillCaretDown />
                         </CaretSymbol>
                     </ProfileButton>
-                    
+
                     {isDropdownOpen && (
                         <DropdownContent>
                             <StyledList>
-                                <Link to="/login" style={{
+                                <Link to="/" style={{
                                     textDecoration: 'none',
                                     color: 'black'
-                                }}>
+                                }} onClick={handleLogout}>
                                     log out
                                 </Link>
                             </StyledList>

@@ -1,35 +1,51 @@
 import React, { useState } from 'react';
 import { SearchContainer, InputSearch, SearchButton, EmailList, ElementsList } from './style'
 import { useNavigate } from 'react-router-dom';
+import { api } from '../../services/axios'
 
 export function SearchBar() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [suggestedEmails, setSuggestedEmails] = useState([]);
-  const navigate = useNavigate(); 
+  const [suggestedUsers, setSuggestedUsers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(undefined);
+  const navigate = useNavigate();
 
   const handleInputChange = (event) => {
     const value = event.target.value;
     setSearchTerm(value);
 
-    const suggestions = ['debora@gmail.com', 'thiago@gmail.com', 'bea@gmail.com'];
-    const filteredSuggestions = suggestions.filter((email) =>
-      email.toLowerCase().includes(value.toLowerCase())
-    );
-
-    setSuggestedEmails(filteredSuggestions);
+    if (value.trim() !== "") {
+      const config = {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('userToken')}`
+        }
+      }
+      api.get(`/users/search/${value}`, config).then((response) => {
+        setSuggestedUsers(response.data);
+      }).catch((error) => {
+        if (error.response.status === 401) {
+          localStorage.clear();
+          navigate('/');
+        } else {
+          console.log(error);
+        }
+      })
+    } else {
+      setSuggestedUsers([]);
+    }
   };
 
   const handleSearch = () => {
-    if (searchTerm.trim() !== '') { 
-      const nomePessoa = searchTerm.split('@')[0] 
+    if (currentUser !== undefined) {
+      const nomePessoa = currentUser.name;
       navigate(`/singlechat/${nomePessoa}`)
     }
   };
 
 
-  const handleSuggestionClick = (email) => {
-    setSearchTerm(email);
-    setSuggestedEmails([]);
+  const handleSuggestionClick = (user) => {
+    setSearchTerm(user.email);
+    setCurrentUser(user);
+    setSuggestedUsers([]);
   };
 
   return (
@@ -43,11 +59,11 @@ export function SearchBar() {
 
       <SearchButton onClick={handleSearch}>search</SearchButton>
 
-      {suggestedEmails.length > 0 && (
+      {suggestedUsers.length > 0 && (
         <EmailList>
-          {suggestedEmails.map((email) => (
-            <ElementsList key={email} onClick={() => handleSuggestionClick(email)}>
-              {email}
+          {suggestedUsers.map((user) => (
+            <ElementsList key={user.email} onClick={() => handleSuggestionClick(user)}>
+              {user.name} - [{user.email}]
             </ElementsList>
           ))}
         </EmailList>
