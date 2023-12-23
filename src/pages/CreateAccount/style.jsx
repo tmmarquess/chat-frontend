@@ -9,6 +9,10 @@ export const Container = styled.div`
   display: flex;
 `
 
+export const Form = styled.form`
+    
+`
+
 export const SignUpContainer = styled.div`
     width: 400px;
     height: 550px;
