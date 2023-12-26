@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import io from "socket.io-client";
+import { useNavigate } from 'react-router-dom';
 import {
   ChatBoxContainer,
   MessageInput,
@@ -12,16 +11,14 @@ import {
   BotMessage,
   UsuarioMessage
 } from './style';
+import { socket } from '../../services/socket';
 
-
-let socket;
-
-export function ChatBox() {
+export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
   const navigate = useNavigate();
-  const { chatEmail } = useParams();
   const [mensagens, setMensagens] = useState([]);
   const [mensagemAtual, setMensagemAtual] = useState('');
   const [messageQueue, setMessageQueue] = useState([]);
+  const [otherChatsQueue, setOtherChatsQueue] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
 
   const enviarMensagemLocal = (texto, deUsuario) => {
@@ -41,6 +38,7 @@ export function ChatBox() {
       socket.emit("emitRoom", {
         senderEmail: userData.email,
         message: mensagemAtual,
+        timestamp: Date.now(),
         receiverId: chatEmail,
       });
       setMensagemAtual('');
@@ -48,14 +46,9 @@ export function ChatBox() {
   };
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
+    const savedMessages = JSON.parse(localStorage.getItem(`messages-${chatEmail}`)) || [];
+    setMensagens(savedMessages);
 
-    if (!userData) {
-      navigate("/")
-    }
-
-    socket = io(process.env.REACT_APP_BACKEND_BASE_URL);
-    socket.emit("setup", userData);
     // socket.on("connected", () => setSocketConnected(true));
 
     socket.on("typing", () => setIsTyping(true));
@@ -82,9 +75,26 @@ export function ChatBox() {
   useEffect(() => {
     let currentMessage = messageQueue.pop();
     if (currentMessage) {
-      setMensagens((prevMensagens) => [...prevMensagens, currentMessage])
+      setMensagens((prevMensagens) => [...prevMensagens, currentMessage]);
     }
   }, [messageQueue]);
+
+  useEffect(() => {
+    let currentMessage = otherChatsQueue.pop();
+    if (currentMessage) {
+      setNovosNomesQueue([...novosNomesQueue, currentMessage.senderEmail]);
+      const chatMessages = JSON.parse(localStorage.getItem(`messages-${currentMessage.senderEmail}`)) || []
+      localStorage.setItem(`messages-${currentMessage.senderEmail}`, JSON.stringify([...chatMessages, { texto: currentMessage.texto, deUsuario: false }]));
+    }
+    // eslint-disable-next-line
+  }, [otherChatsQueue]);
+
+  useEffect(() => {
+    if (mensagens.length !== 0) {
+      localStorage.setItem(`messages-${chatEmail}`, JSON.stringify(mensagens));
+    }
+    // eslint-disable-next-line
+  }, [mensagens]);
 
   return (
     <>
