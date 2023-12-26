@@ -36,8 +36,8 @@ export function SearchBar() {
 
   const handleSearch = () => {
     if (currentUser !== undefined) {
-      const nomePessoa = currentUser.name;
-      navigate(`/singlechat/${nomePessoa}`)
+      const emailPessoa = currentUser.email;
+      navigate(`/chat/${emailPessoa}`)
     }
   };
 
