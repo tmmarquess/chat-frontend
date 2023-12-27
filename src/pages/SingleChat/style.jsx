@@ -49,15 +49,6 @@ export const Title = styled.p`
   font-size: 30px;
 `
 
-export const ButtonGroup = styled.button`
-  margin-top: 17px;
-  border: none;
-  background: #f0f0f0;
-  border-radius: 5px;
-  width: 180px;
-  height: 40px;
-`
-
 export const ContactContainer = styled.div`
   background: #f5f5f5;
   height: 400px;
@@ -93,4 +84,8 @@ export const PeopleChat  = styled.button`
       background-color: #008470;
       cursor: pointer;
     }
+`
+
+export const ButtonContainer = styled.div`
+ 
 `

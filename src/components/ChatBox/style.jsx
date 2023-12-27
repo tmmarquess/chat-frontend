@@ -68,7 +68,7 @@ export const UsuarioMessage = styled(MessageContainer)`
   text-align: right;
   width: 300px;
   margin-left: 470px;
-
+  word-wrap: break-word;
 `;
 
 export const BotMessage = styled(MessageContainer)`
@@ -76,4 +76,5 @@ export const BotMessage = styled(MessageContainer)`
   color: #000000;
   text-align: left;
   width: 300px;
+  word-wrap: break-word;
 `;

@@ -1,31 +1,15 @@
-import React, { useState } from "react";
-import Thiago from '../../img/Thiago.png'
+import React from "react";
 import { SearchBar } from "../../components/SearchBar"
 import { Link } from "react-router-dom";
-import { CaretSymbol } from "./style";
-import { AiFillCaretDown } from "react-icons/ai";
 
 import {
     Decoration,
     ProfileButton,
-    Image,
-    Img,
     SearchContainer,
-    DropdownContainer,
-    DropdownContent,
-    StyledList,
+    DropdownContainer
 } from "./style"
 
 export function Header() {
-
-    const [isDropdownOpen, setDropdownOpen] = useState(false);
-
-    const toggleDropdown = () => {
-        setDropdownOpen(!isDropdownOpen);
-    };
-    const handleLogout = () => {
-        localStorage.clear();
-    }
 
     return (
         <>
@@ -34,27 +18,14 @@ export function Header() {
                     <SearchBar />
                 </SearchContainer>
                 <DropdownContainer>
-                    <ProfileButton onClick={toggleDropdown}>
-                        <Image>
-                            <Img src={Thiago} />
-                        </Image>
-                        <CaretSymbol>
-                            <AiFillCaretDown />
-                        </CaretSymbol>
+                    <ProfileButton>
+                        <Link to="/" style={{
+                            textDecoration: 'none',
+                            color: 'black'}}>
+                            log out
+                        </Link>
                     </ProfileButton>
 
-                    {isDropdownOpen && (
-                        <DropdownContent>
-                            <StyledList>
-                                <Link to="/" style={{
-                                    textDecoration: 'none',
-                                    color: 'black'
-                                }} onClick={handleLogout}>
-                                    log out
-                                </Link>
-                            </StyledList>
-                        </DropdownContent>
-                    )}
                 </DropdownContainer>
             </Decoration>
         </>

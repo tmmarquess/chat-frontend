@@ -15,30 +15,18 @@ export const Decoration = styled.div`
 
 export const ProfileButton = styled.div`
   margin-right: 20px;
-  width: 120px;
+  width: 100px;
   border-radius: 10px;
   background: #e3e3e3;
   display: flex;
+  align-items: center;
+  height: 30px;
+  justify-content: center;
 
   &:hover {
     background-color: #d0d0d0;
     cursor: pointer;
   }
-`
-
-export const Image = styled.div`
-  width: 45px;
-  height: 45px;
-  border-radius: 22.5px;
-  margin-left: 20px;
-  margin-top: 2px;
-`
-
-export const Img = styled.img`
-  border-radius: 22.5px;
-  width: 45px;
-  height: 45px;
-  object-fit: contain;
 `
 
 export const CaretSymbol = styled.div`
@@ -56,31 +44,3 @@ export const DropdownContainer = styled.div`
   display: inline-block;
 `;
 
-export const DropdownContent = styled.div`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 8px;
-  z-index: 1;
-`;
-
-export const StyledList = styled.ul`
-  top: 100%;
-  left: 0;
-  width: 100px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  border-top: none;
-  cursor: pointer;
-  background-color: white;
-  transition: background-color 0.3s;
-
-  &:hover {
-      background-color: #f0f0f0;
-    }
-`;

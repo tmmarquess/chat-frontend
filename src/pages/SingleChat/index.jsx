@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from "../../components/Header"
 import { ChatBox } from "../../components/ChatBox";
+import { GroupChatButton } from "../../components/GroupChatButton";
 import {
     SearchPeople,
     Sidebar,
@@ -9,10 +10,10 @@ import {
     ChatScreen,
     ContentCont,
     Title,
-    ButtonGroup,
     ContainerBar,
     ContactContainer,
     PeopleChat,
+    ButtonContainer
 } from "./style"
 import { ChatTitle } from "../Chat/style";
 import { socket } from "../../services/socket";
@@ -24,6 +25,8 @@ export function SingleChat() {
     const [novosNomesQueue, setNovosNomesQueue] = useState([]);
     const [ChatsQueue, setChatsQueue] = useState([]);
     const [chatAtivo, setChatAtivo] = useState(null);
+
+    const [createdGroups, setCreatedGroups] = useState([]);
 
     useEffect(() => {
         const nomesLocalStorage = JSON.parse(localStorage.getItem('nomes')) || [];
@@ -90,10 +93,28 @@ export function SingleChat() {
         // eslint-disable-next-line
     }, [novosNomesQueue]);
 
-    const toggleChat = (emailPessoa) => {
-        setChatAtivo(chatAtivo === emailPessoa ? null : emailPessoa);
-        navigate(`/chat/${emailPessoa}`);
+    const toggleChat = (chatTarget) => {
+        const chatTargetName = chatTarget?.groupName || chatTarget;
+    
+        setChatAtivo((prevChat) => (prevChat === chatTargetName ? null : chatTargetName));
+    
+        if (chatTargetName) {
+          navigate(`/chat/${chatTargetName}`);
+        }
+      };
+
+    const handleGroupCreate = (groupData) => {
+    const groupExists = createdGroups.some((group) => group.groupName === groupData.groupName);
+    
+        if (!groupExists) {
+            setCreatedGroups([...createdGroups, groupData]);
+            toggleChat(groupData);
+        } else {
+            console.log('Grupo já existe:', groupData.groupName);
+        }
     };
+    
+      
 
     return (
         <>
@@ -105,7 +126,10 @@ export function SingleChat() {
                     <Sidebar>
                         <ContainerBar>
                             <Title>My chats</Title>
-                            <ButtonGroup>New Group Chat +</ButtonGroup>
+                            <ButtonContainer>
+                            <GroupChatButton onGroupCreate={handleGroupCreate} />
+                            </ButtonContainer>
+                            
                         </ContainerBar>
                         <ContactContainer>
                             {nomesArmazenados.map((pessoa, index) => (
@@ -128,6 +152,7 @@ export function SingleChat() {
                                 )}
                             </div>
                         ))}
+
                     </ChatScreen>
                 </ContentCont>
             </Container>
