@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
+import JSEncrypt from 'jsencrypt';
 import { Header } from "../../components/Header"
 import { ChatBox } from "../../components/ChatBox";
 import { GroupChatButton } from "../../components/GroupChatButton";
@@ -61,9 +62,12 @@ export function SingleChat() {
                 navigate("/")
             }
             if (newMessage.senderEmail !== userData.email) {
+                const decrypter = new JSEncrypt();
+                decrypter.setPrivateKey(localStorage.getItem('privateKey'));
+                const decryptedMessage = decrypter.decrypt(newMessage.message);
                 setChatsQueue((prevMensagens) => [
                     ...prevMensagens,
-                    { texto: newMessage.message, deUsuario: false, senderEmail: newMessage.senderEmail },
+                    { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail },
                 ]);
             }
         });
@@ -95,17 +99,17 @@ export function SingleChat() {
 
     const toggleChat = (chatTarget) => {
         const chatTargetName = chatTarget?.groupName || chatTarget;
-    
+
         setChatAtivo((prevChat) => (prevChat === chatTargetName ? null : chatTargetName));
-    
+
         if (chatTargetName) {
-          navigate(`/chat/${chatTargetName}`);
+            navigate(`/chat/${chatTargetName}`);
         }
-      };
+    };
 
     const handleGroupCreate = (groupData) => {
-    const groupExists = createdGroups.some((group) => group.groupName === groupData.groupName);
-    
+        const groupExists = createdGroups.some((group) => group.groupName === groupData.groupName);
+
         if (!groupExists) {
             setCreatedGroups([...createdGroups, groupData]);
             toggleChat(groupData);
@@ -113,8 +117,8 @@ export function SingleChat() {
             console.log('Grupo já existe:', groupData.groupName);
         }
     };
-    
-      
+
+
 
     return (
         <>
@@ -127,9 +131,9 @@ export function SingleChat() {
                         <ContainerBar>
                             <Title>My chats</Title>
                             <ButtonContainer>
-                            <GroupChatButton onGroupCreate={handleGroupCreate} />
+                                <GroupChatButton onGroupCreate={handleGroupCreate} />
                             </ButtonContainer>
-                            
+
                         </ContainerBar>
                         <ContactContainer>
                             {nomesArmazenados.map((pessoa, index) => (

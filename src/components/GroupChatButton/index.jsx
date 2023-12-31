@@ -71,7 +71,6 @@ export function GroupChatButton({ onGroupCreate }){
           <Input
             type="text"
             id="groupName"
-            value={groupName}
             onChange={handleGroupNameChange}
             placeholder="Enter group name"
           />

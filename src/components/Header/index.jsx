@@ -10,7 +10,6 @@ import {
 } from "./style"
 
 export function Header() {
-
     return (
         <>
             <Decoration>
@@ -21,7 +20,8 @@ export function Header() {
                     <ProfileButton>
                         <Link to="/" style={{
                             textDecoration: 'none',
-                            color: 'black'}}>
+                            color: 'black'
+                        }}>
                             log out
                         </Link>
                     </ProfileButton>

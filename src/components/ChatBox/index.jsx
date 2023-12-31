@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import JSEncrypt from 'jsencrypt';
 import {
   ChatBoxContainer,
   MessageInput,
@@ -20,6 +21,7 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
   const [messageQueue, setMessageQueue] = useState([]);
   const [otherChatsQueue, setOtherChatsQueue] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [currentChatPubKey, setCurrentChatPubKey] = useState(undefined);
 
   const enviarMensagemLocal = (texto, deUsuario) => {
     setMensagens([...mensagens, { texto, deUsuario }]);
@@ -31,13 +33,18 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
     if (!userData) {
       navigate("/")
     }
-
     if (mensagemAtual.trim() !== '') {
+      const encrypter = new JSEncrypt();
+      encrypter.setPublicKey(currentChatPubKey);
+      console.log(currentChatPubKey);
+      const encryptedMessage = encrypter.encrypt(mensagemAtual);
+      console.log(encryptedMessage);
+
       enviarMensagemLocal(mensagemAtual, true);
       // enviarMensagemBot();
       socket.emit("emitRoom", {
         senderEmail: userData.email,
-        message: mensagemAtual,
+        message: encryptedMessage,
         timestamp: Date.now(),
         receiverId: chatEmail,
       });
@@ -48,6 +55,16 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
   useEffect(() => {
     const savedMessages = JSON.parse(localStorage.getItem(`messages-${chatEmail}`)) || [];
     setMensagens(savedMessages);
+
+    const currentChatPublicKey = localStorage.getItem(`pubkey-${chatEmail}`) || undefined;
+
+    if (!currentChatPublicKey) {
+      socket.on('getPubKey', (chatPubKey) => {
+
+        setCurrentChatPubKey(chatPubKey);
+      })
+      socket.emit('sendPubKey', chatEmail);
+    }
 
     // socket.on("connected", () => setSocketConnected(true));
 
@@ -62,13 +79,15 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
       }
 
       if (newMessage.senderEmail === chatEmail) {
+        const decrypter = new JSEncrypt();
+        decrypter.setPrivateKey(localStorage.getItem('privateKey'));
+        const decryptedMessage = decrypter.decrypt(newMessage.message);
         setMessageQueue((prevMensagens) => [
           ...prevMensagens,
-          { texto: newMessage.message, deUsuario: false },
+          { texto: decryptedMessage, deUsuario: false },
         ]);
       }
     });
-
     // eslint-disable-next-line
   }, []);
 
