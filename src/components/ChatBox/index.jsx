@@ -36,16 +36,13 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
     if (mensagemAtual.trim() !== '') {
       const encrypter = new JSEncrypt();
       encrypter.setPublicKey(currentChatPubKey);
-      console.log(currentChatPubKey);
       const encryptedMessage = encrypter.encrypt(mensagemAtual);
-      console.log(encryptedMessage);
 
       enviarMensagemLocal(mensagemAtual, true);
       // enviarMensagemBot();
       socket.emit("emitRoom", {
         senderEmail: userData.email,
         message: encryptedMessage,
-        timestamp: Date.now(),
         receiverId: chatEmail,
       });
       setMensagemAtual('');
@@ -84,7 +81,16 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
         const decryptedMessage = decrypter.decrypt(newMessage.message);
         setMessageQueue((prevMensagens) => [
           ...prevMensagens,
-          { texto: decryptedMessage, deUsuario: false },
+          { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
+        ]);
+      }
+      if (newMessage.receiverId === chatEmail && newMessage.senderEmail !== JSON.parse(localStorage.getItem("userData")).email) {
+        const decrypter = new JSEncrypt();
+        decrypter.setPrivateKey(localStorage.getItem(`privKey-${chatEmail}`));
+        const decryptedMessage = decrypter.decrypt(newMessage.message);
+        setMessageQueue((prevMensagens) => [
+          ...prevMensagens,
+          { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
         ]);
       }
     });
