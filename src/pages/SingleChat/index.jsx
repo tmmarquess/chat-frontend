@@ -65,6 +65,7 @@ export function SingleChat() {
                     } else {
                         api.get(`users/groups/get/${chatEmail}`, config).then((response) => {
                             const groupData = response.data;
+                            groupData.name = `[grupo] ${groupData.name}`;
 
                             const novosNomes = [...nomesLocalStorage, groupData];
                             localStorage.setItem('nomes', JSON.stringify(novosNomes));
@@ -89,10 +90,6 @@ export function SingleChat() {
 
         socket.on("connected", (groupsData) => {
             setSaveGroups(groupsData);
-            for (const index in groupsData) {
-                console.log(`emmitingAAAAAAAA ==> ${groupsData[index].id}`)
-                socket.emit('joinRoom', groupsData[index].id);
-            }
         })
 
         socket.on("emitRoom", (newMessage) => {
@@ -186,6 +183,8 @@ export function SingleChat() {
         const data = []
         for (const index in saveGroups) {
             localStorage.setItem(`privKey-${saveGroups[index].id}`, saveGroups[index].privKey);
+            socket.emit('joinRoom', saveGroups[index].id);
+
             let nameFound = false;
             for (const index2 in nomesArmazenados) {
                 if (nomesArmazenados[index2].id === saveGroups[index].id) {
@@ -194,7 +193,7 @@ export function SingleChat() {
                 }
             }
             if (!nameFound) {
-                data.push({ name: saveGroups[index].group_name, id: saveGroups[index].id })
+                data.push({ name: `[grupo] ${saveGroups[index].group_name}`, id: saveGroups[index].id })
             }
         }
 

@@ -37,16 +37,12 @@ export function GroupChatButton() {
       return;
     }
 
-    console.log('Nome do Grupo:', groupName);
-    console.log('Emails Selecionados:', selectedEmails);
-
     const groupData = {
       creatorEmail: JSON.parse(localStorage.getItem("userData")).email,
       groupName,
       selectedEmails,
     };
     socket.on('groupCreated', (createdGroupData) => {
-      console.log(createdGroupData);
       navigate(`/chat/${createdGroupData.id}`)
       setSelectedEmails([]);
       setGroupName("");

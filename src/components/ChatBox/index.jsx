@@ -19,8 +19,6 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
   const [mensagens, setMensagens] = useState([]);
   const [mensagemAtual, setMensagemAtual] = useState('');
   const [messageQueue, setMessageQueue] = useState([]);
-  const [otherChatsQueue, setOtherChatsQueue] = useState([]);
-  const [isTyping, setIsTyping] = useState(false);
   const [currentChatPubKey, setCurrentChatPubKey] = useState(undefined);
 
   const enviarMensagemLocal = (texto, deUsuario) => {
@@ -36,7 +34,12 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
     if (mensagemAtual.trim() !== '') {
       const encrypter = new JSEncrypt();
       encrypter.setPublicKey(currentChatPubKey);
-      const encryptedMessage = encrypter.encrypt(mensagemAtual);
+      let encryptedMessage = '';
+      if (chatEmail.includes('@')) {
+        encryptedMessage = encrypter.encrypt(`${mensagemAtual}`);
+      } else {
+        encryptedMessage = encrypter.encrypt(`[${userData.name}] ${mensagemAtual}`);
+      }
 
       enviarMensagemLocal(mensagemAtual, true);
       // enviarMensagemBot();
@@ -62,11 +65,6 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
       })
       socket.emit('sendPubKey', chatEmail);
     }
-
-    // socket.on("connected", () => setSocketConnected(true));
-
-    socket.on("typing", () => setIsTyping(true));
-    socket.on("stop typing", () => setIsTyping(false));
 
     socket.on("emitRoom", (newMessage) => {
       const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
@@ -104,15 +102,6 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
     }
   }, [messageQueue]);
 
-  useEffect(() => {
-    let currentMessage = otherChatsQueue.pop();
-    if (currentMessage) {
-      setNovosNomesQueue([...novosNomesQueue, currentMessage.senderEmail]);
-      const chatMessages = JSON.parse(localStorage.getItem(`messages-${currentMessage.senderEmail}`)) || []
-      localStorage.setItem(`messages-${currentMessage.senderEmail}`, JSON.stringify([...chatMessages, { texto: currentMessage.texto, deUsuario: false }]));
-    }
-    // eslint-disable-next-line
-  }, [otherChatsQueue]);
 
   useEffect(() => {
     if (mensagens.length !== 0) {
