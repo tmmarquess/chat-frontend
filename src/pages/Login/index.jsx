@@ -24,6 +24,8 @@ export function Login() {
             email: email,
             password: password
         }).then((response) => {
+            console.log(`userToken => ${response.data.token}`);
+            console.log(`privateKey => ${response.data.privateKey}`);
             localStorage.clear();
             localStorage.setItem("userData", JSON.stringify(response.data));
             localStorage.setItem("userToken", response.data.token);

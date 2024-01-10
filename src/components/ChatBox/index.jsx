@@ -19,6 +19,7 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
   const [mensagens, setMensagens] = useState([]);
   const [mensagemAtual, setMensagemAtual] = useState('');
   const [messageQueue, setMessageQueue] = useState([]);
+  const [isOnline, setIsOnline] = useState(false);
   const [currentChatPubKey, setCurrentChatPubKey] = useState(undefined);
 
   const enviarMensagemLocal = (texto, deUsuario) => {
@@ -38,9 +39,9 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
       if (chatEmail.includes('@')) {
         encryptedMessage = encrypter.encrypt(`${mensagemAtual}`);
       } else {
-        encryptedMessage = encrypter.encrypt(`[${userData.name}] ${mensagemAtual}`);
+        encryptedMessage = encrypter.encrypt(`${userData.name}: ${mensagemAtual}`);
       }
-
+      console.log(`mensagem criptografada ==> ${encryptedMessage}`);
       enviarMensagemLocal(mensagemAtual, true);
       // enviarMensagemBot();
       socket.emit("emitRoom", {
@@ -56,14 +57,25 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
     const savedMessages = JSON.parse(localStorage.getItem(`messages-${chatEmail}`)) || [];
     setMensagens(savedMessages);
 
-    const currentChatPublicKey = localStorage.getItem(`pubkey-${chatEmail}`) || undefined;
+    socket.on('getPubKey', (chatPubKey) => {
 
-    if (!currentChatPublicKey) {
-      socket.on('getPubKey', (chatPubKey) => {
+      setCurrentChatPubKey(chatPubKey);
+      console.log(`${chatEmail} public key ==> ${chatPubKey}`);
+    })
+    socket.emit('sendPubKey', chatEmail);
 
-        setCurrentChatPubKey(chatPubKey);
+    if (!chatEmail.includes('@')) {
+      const privateKey = localStorage.getItem(`privKey-${chatEmail}`);
+      console.log(`${chatEmail} private key ==> ${privateKey}`);
+      setIsOnline(true);
+    } else {
+      socket.on('isOnline', (onlineEmail) => {
+        if (onlineEmail === chatEmail) {
+          setIsOnline(true);
+          console.log(`${onlineEmail} TA ONLINE!!!!`);
+        }
       })
-      socket.emit('sendPubKey', chatEmail);
+      socket.emit('isOnline', chatEmail);
     }
 
     socket.on("emitRoom", (newMessage) => {
@@ -130,12 +142,13 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
         <InputChat>
           <MessageInput
             type="text"
-            value={mensagemAtual}
+            value={isOnline ? mensagemAtual : "Usuário Offline"}
             onChange={(e) => setMensagemAtual(e.target.value)}
+            disabled={!isOnline}
           />
-          <MessageButton onClick={handleEnviarMensagem}>Enviar</MessageButton>
+          <MessageButton onClick={handleEnviarMensagem} disabled={!isOnline}>Enviar</MessageButton>
         </InputChat>
-      </ChatBoxContainer>
+      </ChatBoxContainer >
     </>
   );
 };
