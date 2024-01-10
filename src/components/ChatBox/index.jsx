@@ -69,10 +69,10 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
       console.log(`${chatEmail} private key ==> ${privateKey}`);
       setIsOnline(true);
     } else {
-      socket.on('isOnline', (onlineEmail) => {
-        if (onlineEmail === chatEmail) {
-          setIsOnline(true);
-          console.log(`${onlineEmail} TA ONLINE!!!!`);
+      socket.on('isOnline', (onlineUser) => {
+        if (onlineUser.email === chatEmail) {
+          setIsOnline(onlineUser.online);
+          console.log(`${onlineUser.email} TA ONLINE!!!!`);
         }
       })
       socket.emit('isOnline', chatEmail);

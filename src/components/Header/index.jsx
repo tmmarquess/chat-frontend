@@ -8,8 +8,14 @@ import {
     SearchContainer,
     DropdownContainer
 } from "./style"
+import { socket } from "../../services/socket";
 
 export function Header() {
+
+    const logOut = () => {
+        socket.emit("logout", JSON.parse(localStorage.getItem("userData")).email);
+    }
+
     return (
         <>
             <Decoration>
@@ -18,7 +24,7 @@ export function Header() {
                 </SearchContainer>
                 <DropdownContainer>
                     <ProfileButton>
-                        <Link to="/" style={{
+                        <Link to='/' onClick={logOut} style={{
                             textDecoration: 'none',
                             color: 'black'
                         }}>
