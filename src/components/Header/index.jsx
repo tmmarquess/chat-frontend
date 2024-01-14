@@ -14,6 +14,7 @@ export function Header() {
 
     const logOut = () => {
         socket.emit("logout", JSON.parse(localStorage.getItem("userData")).email);
+        localStorage.clear();
     }
 
     return (

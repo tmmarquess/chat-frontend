@@ -41,6 +41,7 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
       } else {
         encryptedMessage = encrypter.encrypt(`${userData.name}: ${mensagemAtual}`);
       }
+      console.log(currentChatPubKey);
       console.log(`mensagem criptografada ==> ${encryptedMessage}`);
       enviarMensagemLocal(mensagemAtual, true);
       // enviarMensagemBot();
@@ -57,13 +58,6 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
     const savedMessages = JSON.parse(localStorage.getItem(`messages-${chatEmail}`)) || [];
     setMensagens(savedMessages);
 
-    socket.on('getPubKey', (chatPubKey) => {
-
-      setCurrentChatPubKey(chatPubKey);
-      console.log(`${chatEmail} public key ==> ${chatPubKey}`);
-    })
-    socket.emit('sendPubKey', chatEmail);
-
     if (!chatEmail.includes('@')) {
       const privateKey = localStorage.getItem(`privKey-${chatEmail}`);
       console.log(`${chatEmail} private key ==> ${privateKey}`);
@@ -72,7 +66,9 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
       socket.on('isOnline', (onlineUser) => {
         if (onlineUser.email === chatEmail) {
           setIsOnline(onlineUser.online);
-          console.log(`${onlineUser.email} TA ONLINE!!!!`);
+          if (onlineUser.online) {
+            setCurrentChatPubKey(onlineUser.pubkey);
+          }
         }
       })
       socket.emit('isOnline', chatEmail);

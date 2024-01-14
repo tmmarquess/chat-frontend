@@ -80,13 +80,52 @@ export function SingleChat() {
         // eslint-disable-next-line
     }, [chatEmail]);
 
+    const arrayBufferToPEM = (buffer, label) => {
+        const uint8Array = new Uint8Array(buffer);
+        const base64String = btoa(String.fromCharCode.apply(null, uint8Array));
+        const pemString = `-----BEGIN ${label}-----\n${base64String}\n-----END ${label}-----\n`;
+        return pemString;
+    }
+
+    const exportKeyPair = async (keys) => {
+        const publicKeyExported = await crypto.subtle.exportKey('spki', keys.publicKey);
+        const privateKeyExported = await crypto.subtle.exportKey('pkcs8', keys.privateKey);
+
+        const publicKey = arrayBufferToPEM(publicKeyExported, 'PUBLIC KEY');
+        const privateKey = arrayBufferToPEM(privateKeyExported, 'PRIVATE KEY');
+
+        return { publicKey, privateKey };
+    }
+
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
 
         if (!userData) {
             navigate("/")
         }
-        socket.emit("setup", userData);
+
+        const privateKey = localStorage.getItem("privateKey") || undefined;
+        const publicKey = localStorage.getItem("publicKey") || undefined;
+
+        if (privateKey === undefined) {
+            window.crypto.subtle.generateKey({
+                name: 'RSA-OAEP',
+                modulusLength: 2048,
+                publicExponent: new Uint8Array([0x01, 0x00, 0x01]), // 65537
+                hash: { name: 'SHA-256' },
+            }, true, ['encrypt', 'decrypt']).then((keyPair) => {
+                exportKeyPair(keyPair).then((keys) => {
+                    const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
+
+                    localStorage.setItem("privateKey", keys.privateKey);
+                    localStorage.setItem("publicKey", keys.publicKey);
+                    socket.emit("setup", { userData, publicKey: keys.publicKey });
+                });
+
+            });
+        } else {
+            socket.emit("setup", { userData, publicKey });
+        }
 
         socket.on("connected", (groupsData) => {
             setSaveGroups(groupsData);

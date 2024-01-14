@@ -25,11 +25,9 @@ export function Login() {
             password: password
         }).then((response) => {
             console.log(`userToken => ${response.data.token}`);
-            console.log(`privateKey => ${response.data.privateKey}`);
             localStorage.clear();
             localStorage.setItem("userData", JSON.stringify(response.data));
             localStorage.setItem("userToken", response.data.token);
-            localStorage.setItem("privateKey", response.data.privateKey);
             navigate('/chat')
         }).catch((err) => {
             console.error("ops! ocorreu um erro" + err);
