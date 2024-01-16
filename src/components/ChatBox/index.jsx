@@ -10,7 +10,8 @@ import {
   NameContainer,
   Name,
   BotMessage,
-  UsuarioMessage
+  UsuarioMessage,
+  ExitGroupButton
 } from './style';
 import { socket } from '../../services/socket';
 
@@ -121,9 +122,17 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
   return (
     <>
       <ChatBoxContainer>
-        <NameContainer>
+      <NameContainer>
+        {chatEmail.includes('@') ? (
           <Name>{chatEmail}</Name>
-        </NameContainer>
+        ) : (
+          <>
+            <Name>{chatEmail}</Name>
+            <ExitGroupButton>exit group</ExitGroupButton>
+          </>
+        )}
+      </NameContainer>
+
         <MessageChat>
           {mensagens.map((mensagem, index) => (
             <React.Fragment key={index}>

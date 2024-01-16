@@ -42,6 +42,7 @@ export const InputChat = styled.div`
 
 export const NameContainer = styled.div`
   height: 35px;
+  display: flex;
 `
 export const Name = styled.p`
   display: flex;
@@ -49,6 +50,24 @@ export const Name = styled.p`
   font-size: 26px;
   margin-top: 4px;
   margin-left: 10px;
+`
+
+export const ExitGroupButton = styled.button`
+  width: 110px;
+  border-radius: 10px;
+  background: #dddddd;
+  align-items: center;
+  height: 32px;
+  border: none;
+  justify-content: center;
+  margin-left: 270px;
+  font-family: Poppins;
+  font-size: 16px;
+
+  &:hover {
+    background-color: #cccccc;
+    cursor: pointer;
+  }
 `
 
 export const MessageStyle = styled.div`
@@ -78,3 +97,4 @@ export const BotMessage = styled(MessageContainer)`
   width: 300px;
   word-wrap: break-word;
 `;
+
