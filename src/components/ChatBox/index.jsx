@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import JSEncrypt from 'jsencrypt';
+import CryptoJS from 'crypto-js'
 import {
   ChatBoxContainer,
   MessageInput,
@@ -34,15 +35,17 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
       navigate("/")
     }
     if (mensagemAtual.trim() !== '') {
-      const encrypter = new JSEncrypt();
-      encrypter.setPublicKey(currentChatPubKey);
       let encryptedMessage = '';
       if (chatEmail.includes('@')) {
+        const encrypter = new JSEncrypt();
+        encrypter.setPublicKey(currentChatPubKey);
+        console.log(currentChatPubKey);
         encryptedMessage = encrypter.encrypt(`${mensagemAtual}`);
       } else {
-        encryptedMessage = encrypter.encrypt(`${userData.name}: ${mensagemAtual}`);
+        const groupKey = JSON.parse(localStorage.getItem(`privKey-${chatEmail}`))
+        encryptedMessage = CryptoJS.AES.encrypt(`${userData.name}: ${mensagemAtual}`, groupKey.k).toString();
+
       }
-      console.log(currentChatPubKey);
       console.log(`mensagem criptografada ==> ${encryptedMessage}`);
       enviarMensagemLocal(mensagemAtual, true);
       // enviarMensagemBot();
@@ -60,8 +63,8 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
     setMensagens(savedMessages);
 
     if (!chatEmail.includes('@')) {
-      const privateKey = localStorage.getItem(`privKey-${chatEmail}`);
-      console.log(`${chatEmail} private key ==> ${privateKey}`);
+      const privateKey = JSON.parse(localStorage.getItem(`privKey-${chatEmail}`)) || undefined;
+      console.log(`${chatEmail} private key ==> ${JSON.stringify(privateKey)}`);
       setIsOnline(true);
     } else {
       socket.on('isOnline', (onlineUser) => {
@@ -92,9 +95,9 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
         ]);
       }
       if (newMessage.receiverId === chatEmail && newMessage.senderEmail !== JSON.parse(localStorage.getItem("userData")).email) {
-        const decrypter = new JSEncrypt();
-        decrypter.setPrivateKey(localStorage.getItem(`privKey-${chatEmail}`));
-        const decryptedMessage = decrypter.decrypt(newMessage.message);
+        const groupKey = JSON.parse(localStorage.getItem(`privKey-${newMessage.receiverId}`))
+        var bytes = CryptoJS.AES.decrypt(newMessage.message, groupKey.k);
+        var decryptedMessage = bytes.toString(CryptoJS.enc.Utf8);
         setMessageQueue((prevMensagens) => [
           ...prevMensagens,
           { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
@@ -122,16 +125,16 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
   return (
     <>
       <ChatBoxContainer>
-      <NameContainer>
-        {chatEmail.includes('@') ? (
-          <Name>{chatEmail}</Name>
-        ) : (
-          <>
+        <NameContainer>
+          {chatEmail.includes('@') ? (
             <Name>{chatEmail}</Name>
-            <ExitGroupButton>exit group</ExitGroupButton>
-          </>
-        )}
-      </NameContainer>
+          ) : (
+            <>
+              <Name>{chatEmail}</Name>
+              <ExitGroupButton>exit group</ExitGroupButton>
+            </>
+          )}
+        </NameContainer>
 
         <MessageChat>
           {mensagens.map((mensagem, index) => (

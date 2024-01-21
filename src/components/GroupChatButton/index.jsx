@@ -30,26 +30,44 @@ export function GroupChatButton() {
     setPopupOpen(false);
   };
 
+  const generateAESKey = async () => {
+    const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+
+    const exportedKey = await crypto.subtle.exportKey("jwk", key);
+
+    return exportedKey;
+  }
+
   const createGroup = () => {
 
     if (groupName.length === 0) {
       alert("digite um nome para o grupo!")
       return;
     }
+    if (selectedEmails.length === 0) {
+      alert("Selecione participantes para o grupo!")
+      return;
+    }
 
-    const groupData = {
-      creatorEmail: JSON.parse(localStorage.getItem("userData")).email,
-      groupName,
-      selectedEmails,
-    };
-    socket.on('groupCreated', (createdGroupData) => {
-      navigate(`/chat/${createdGroupData.id}`)
-      setSelectedEmails([]);
-      setGroupName("");
+    generateAESKey().then((key) => {
+      const groupData = {
+        creatorEmail: JSON.parse(localStorage.getItem("userData")).email,
+        groupName,
+        selectedEmails,
+      };
 
-      cancel();
+      socket.on('groupCreated', (createdGroupData) => {
+        console.log(`GROUP KEY ==> ${JSON.stringify(key)}`);
+        localStorage.setItem(`privKey-${createdGroupData.id}`, JSON.stringify(key));
+        navigate(`/chat/${createdGroupData.id}`)
+        setSelectedEmails([]);
+        setGroupName("");
+
+        cancel();
+      })
+      socket.emit('createGroup', groupData);
     })
-    socket.emit('createGroup', groupData);
+
   };
 
   const handleGroupNameChange = (event) => {

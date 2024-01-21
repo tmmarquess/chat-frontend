@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import JSEncrypt from 'jsencrypt';
+import CryptoJS from "crypto-js";
 import { Header } from "../../components/Header"
 import { ChatBox } from "../../components/ChatBox";
 import { GroupChatButton } from "../../components/GroupChatButton";
@@ -97,6 +98,14 @@ export function SingleChat() {
         return { publicKey, privateKey };
     }
 
+    const generateAESKey = async () => {
+        const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
+
+        const exportedKey = await crypto.subtle.exportKey("jwk", key);
+
+        return exportedKey;
+    }
+
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
 
@@ -127,6 +136,32 @@ export function SingleChat() {
             socket.emit("setup", { userData, publicKey });
         }
 
+        socket.on("onKeySend", async (keyData) => {
+            if (keyData.key === null) {
+                const key = await generateAESKey();
+                localStorage.setItem(`privKey-${keyData.groupId}`, JSON.stringify(key));
+            } else {
+                const decrypter = new JSEncrypt();
+                decrypter.setPrivateKey(localStorage.getItem('privateKey'));
+                const decryptedKey = decrypter.decrypt(keyData.key);
+                localStorage.setItem(`privKey-${keyData.groupId}`, decryptedKey);
+            }
+        })
+
+        socket.on("requestGroupKey", (requestData) => {
+            const groupKey = localStorage.getItem(`privKey-${requestData.groupId}`);
+
+            const encrypter = new JSEncrypt();
+            encrypter.setPublicKey(requestData.requesterPubKey);
+            const encryptedKey = encrypter.encrypt(`${groupKey}`);
+
+            socket.emit("onKeySend", {
+                userEmail: requestData.requesterEmail,
+                groupId: requestData.groupId,
+                key: encryptedKey
+            });
+        })
+
         socket.on("connected", (groupsData) => {
             setSaveGroups(groupsData);
         })
@@ -147,9 +182,9 @@ export function SingleChat() {
                         { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
                     ]);
                 } else {
-                    const decrypter = new JSEncrypt();
-                    decrypter.setPrivateKey(localStorage.getItem(`privKey-${newMessage.receiverId}`));
-                    const decryptedMessage = decrypter.decrypt(newMessage.message);
+                    const groupKey = JSON.parse(localStorage.getItem(`privKey-${newMessage.receiverId}`))
+                    var bytes = CryptoJS.AES.decrypt(newMessage.message, groupKey.k);
+                    var decryptedMessage = bytes.toString(CryptoJS.enc.Utf8);
                     setChatsQueue((prevMensagens) => [
                         ...prevMensagens,
                         { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
@@ -219,9 +254,18 @@ export function SingleChat() {
     }, [novosNomesQueue]);
 
     useEffect(() => {
+        const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
         const data = []
         for (const index in saveGroups) {
-            localStorage.setItem(`privKey-${saveGroups[index].id}`, saveGroups[index].privKey);
+            const groupKey = localStorage.getItem(`privKey-${saveGroups[index].id}`) || undefined;
+            if (groupKey === undefined) {
+                socket.emit("requestGroupKey", {
+                    groupId: saveGroups[index].id,
+                    requesterEmail: userData.email,
+                    requesterPubKey: localStorage.getItem("publicKey")
+                })
+            }
+
             socket.emit('joinRoom', saveGroups[index].id);
 
             let nameFound = false;
