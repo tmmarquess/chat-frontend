@@ -140,26 +140,40 @@ export function SingleChat() {
             if (keyData.key === null) {
                 const key = await generateAESKey();
                 localStorage.setItem(`privKey-${keyData.groupId}`, JSON.stringify(key));
+                socket.emit('joinRoom', keyData.groupId);
             } else {
                 const decrypter = new JSEncrypt();
                 decrypter.setPrivateKey(localStorage.getItem('privateKey'));
                 const decryptedKey = decrypter.decrypt(keyData.key);
-                localStorage.setItem(`privKey-${keyData.groupId}`, decryptedKey);
+                console.log(decryptedKey);
+                if (decryptedKey !== null && decryptedKey !== undefined) {
+                    localStorage.setItem(`privKey-${keyData.groupId}`, decryptedKey);
+                    socket.emit('joinRoom', keyData.groupId);
+                }
             }
         })
 
         socket.on("requestGroupKey", (requestData) => {
             const groupKey = localStorage.getItem(`privKey-${requestData.groupId}`);
+            console.log(`GROUP KEY TO ENCRYPT ==> ${groupKey}`);
+            if (groupKey == null) {
+                socket.emit("onKeySend", {
+                    userEmail: requestData.requesterEmail,
+                    groupId: requestData.groupId,
+                    key: null
+                });
+            } else {
+                const encrypter = new JSEncrypt();
+                encrypter.setPublicKey(requestData.requesterPubKey);
+                const encryptedKey = encrypter.encrypt(`${groupKey}`);
+                console.log(`ENCRYPTED KEY ==> ${encryptedKey}`);
 
-            const encrypter = new JSEncrypt();
-            encrypter.setPublicKey(requestData.requesterPubKey);
-            const encryptedKey = encrypter.encrypt(`${groupKey}`);
-
-            socket.emit("onKeySend", {
-                userEmail: requestData.requesterEmail,
-                groupId: requestData.groupId,
-                key: encryptedKey
-            });
+                socket.emit("onKeySend", {
+                    userEmail: requestData.requesterEmail,
+                    groupId: requestData.groupId,
+                    key: encryptedKey
+                });
+            }
         })
 
         socket.on("connected", (groupsData) => {
@@ -182,13 +196,16 @@ export function SingleChat() {
                         { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
                     ]);
                 } else {
-                    const groupKey = JSON.parse(localStorage.getItem(`privKey-${newMessage.receiverId}`))
-                    var bytes = CryptoJS.AES.decrypt(newMessage.message, groupKey.k);
-                    var decryptedMessage = bytes.toString(CryptoJS.enc.Utf8);
-                    setChatsQueue((prevMensagens) => [
-                        ...prevMensagens,
-                        { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
-                    ]);
+                    const groupKey = JSON.parse(localStorage.getItem(`privKey-${newMessage.receiverId}`)) || undefined
+                    console.log(groupKey);
+                    if (groupKey !== undefined) {
+                        var bytes = CryptoJS.AES.decrypt(newMessage.message, groupKey.k);
+                        var decryptedMessage = bytes.toString(CryptoJS.enc.Utf8);
+                        setChatsQueue((prevMensagens) => [
+                            ...prevMensagens,
+                            { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
+                        ]);
+                    }
                 }
 
             }
@@ -266,8 +283,6 @@ export function SingleChat() {
                 })
             }
 
-            socket.emit('joinRoom', saveGroups[index].id);
-
             let nameFound = false;
             for (const index2 in nomesArmazenados) {
                 if (nomesArmazenados[index2].id === saveGroups[index].id) {
@@ -290,6 +305,19 @@ export function SingleChat() {
         setChatAtivo(chatAtivo === chatTarget ? null : chatTarget);
         navigate(`/chat/${chatTarget}`);
     };
+
+
+    const handleGroupExit = () => {
+        // mandar pro websocket & deletar o grupo & as mensagens k
+        const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
+        socket.emit("leaveGroup", {
+            groupId: chatEmail,
+            userEmail: userData.email,
+        })
+        navigate("/chat");
+        setNomesArmazenados(nomesArmazenados.filter((chat) => { return chat.id !== chatEmail }))
+        localStorage.setItem(`messages-${chatEmail}`, JSON.stringify([]));
+    }
 
     return (
         <>
@@ -320,8 +348,7 @@ export function SingleChat() {
                                 {chatAtivo === pessoa.id && (
                                     <ChatBox
                                         chatEmail={pessoa.id}
-                                        setNovosNomesQueue={setNovosNomesQueue}
-                                        novosNomesQueue={novosNomesQueue}
+                                        handleGroupExit={handleGroupExit}
                                         onClose={() => toggleChat(null)}
                                     />
                                 )}

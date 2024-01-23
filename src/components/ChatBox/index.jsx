@@ -16,7 +16,7 @@ import {
 } from './style';
 import { socket } from '../../services/socket';
 
-export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
+export function ChatBox({ chatEmail, handleGroupExit }) {
   const navigate = useNavigate();
   const [mensagens, setMensagens] = useState([]);
   const [mensagemAtual, setMensagemAtual] = useState('');
@@ -71,6 +71,7 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
         if (onlineUser.email === chatEmail) {
           setIsOnline(onlineUser.online);
           if (onlineUser.online) {
+            console.log(`${chatEmail} public key ==> ${onlineUser.pubkey}`);
             setCurrentChatPubKey(onlineUser.pubkey);
           }
         }
@@ -131,7 +132,7 @@ export function ChatBox({ chatEmail, novosNomesQueue, setNovosNomesQueue }) {
           ) : (
             <>
               <Name>{chatEmail}</Name>
-              <ExitGroupButton>exit group</ExitGroupButton>
+              <ExitGroupButton onClick={handleGroupExit}>exit group</ExitGroupButton>
             </>
           )}
         </NameContainer>
