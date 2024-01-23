@@ -137,15 +137,19 @@ export function SingleChat() {
         }
 
         socket.on("onKeySend", async (keyData) => {
+            const currentKey = localStorage.getItem(`privKey-${keyData.groupId}`) || undefined
             if (keyData.key === null) {
-                const key = await generateAESKey();
-                localStorage.setItem(`privKey-${keyData.groupId}`, JSON.stringify(key));
-                socket.emit('joinRoom', keyData.groupId);
+                if (currentKey === undefined) {
+                    const key = await generateAESKey();
+                    localStorage.setItem(`privKey-${keyData.groupId}`, JSON.stringify(key));
+                    console.log(`KEY GERADA ==> ${JSON.stringify(key)}`);
+                    socket.emit('joinRoom', keyData.groupId);
+                }
             } else {
                 const decrypter = new JSEncrypt();
                 decrypter.setPrivateKey(localStorage.getItem('privateKey'));
                 const decryptedKey = decrypter.decrypt(keyData.key);
-                console.log(decryptedKey);
+                console.log(`KEY RECEBIDA ==> ${decryptedKey}`);
                 if (decryptedKey !== null && decryptedKey !== undefined) {
                     localStorage.setItem(`privKey-${keyData.groupId}`, decryptedKey);
                     socket.emit('joinRoom', keyData.groupId);
