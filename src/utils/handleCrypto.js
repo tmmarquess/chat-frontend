@@ -1,4 +1,3 @@
-import JSEncrypt from 'jsencrypt';
 import CryptoJS from 'crypto-js'
 import { api } from '../services/axios';
 
