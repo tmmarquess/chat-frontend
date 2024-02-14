@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
-import JSEncrypt from 'jsencrypt';
-import CryptoJS from "crypto-js";
 import { Header } from "../../components/Header"
 import { ChatBox } from "../../components/ChatBox";
 import { GroupChatButton } from "../../components/GroupChatButton";
@@ -20,6 +18,7 @@ import {
 import { ChatTitle } from "../Chat/style";
 import { socket } from "../../services/socket";
 import { api } from "../../services/axios";
+import { AESDecrypt, RSADecrypt, RSAEncrypt, generateAESKey, generateKeypair, verifyMessage } from "../../utils/handleCrypto";
 
 export function SingleChat() {
     const navigate = useNavigate();
@@ -81,31 +80,6 @@ export function SingleChat() {
         // eslint-disable-next-line
     }, [chatEmail]);
 
-    const arrayBufferToPEM = (buffer, label) => {
-        const uint8Array = new Uint8Array(buffer);
-        const base64String = btoa(String.fromCharCode.apply(null, uint8Array));
-        const pemString = `-----BEGIN ${label}-----\n${base64String}\n-----END ${label}-----\n`;
-        return pemString;
-    }
-
-    const exportKeyPair = async (keys) => {
-        const publicKeyExported = await crypto.subtle.exportKey('spki', keys.publicKey);
-        const privateKeyExported = await crypto.subtle.exportKey('pkcs8', keys.privateKey);
-
-        const publicKey = arrayBufferToPEM(publicKeyExported, 'PUBLIC KEY');
-        const privateKey = arrayBufferToPEM(privateKeyExported, 'PRIVATE KEY');
-
-        return { publicKey, privateKey };
-    }
-
-    const generateAESKey = async () => {
-        const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
-
-        const exportedKey = await crypto.subtle.exportKey("jwk", key);
-
-        return exportedKey;
-    }
-
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
 
@@ -117,47 +91,38 @@ export function SingleChat() {
         const publicKey = localStorage.getItem("publicKey") || undefined;
 
         if (privateKey === undefined) {
-            window.crypto.subtle.generateKey({
-                name: 'RSA-OAEP',
-                modulusLength: 2048,
-                publicExponent: new Uint8Array([0x01, 0x00, 0x01]), // 65537
-                hash: { name: 'SHA-256' },
-            }, true, ['encrypt', 'decrypt']).then((keyPair) => {
-                exportKeyPair(keyPair).then((keys) => {
-                    const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
+            generateKeypair().then((keys) => {
+                const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
 
-                    localStorage.setItem("privateKey", keys.privateKey);
-                    localStorage.setItem("publicKey", keys.publicKey);
-                    socket.emit("setup", { userData, publicKey: keys.publicKey });
-                });
-
-            });
+                localStorage.setItem("privateKey", keys.privateKey);
+                localStorage.setItem("publicKey", keys.publicKey);
+                socket.emit("setup", { userData, publicKey: keys.publicKey });
+            })
         } else {
             socket.emit("setup", { userData, publicKey });
         }
 
-        socket.on("onKeySend", async (keyData) => {
+        socket.once("onKeySend", async (keyData) => {
             const currentKey = localStorage.getItem(`privKey-${keyData.groupId}`) || undefined
             if (keyData.key === null) {
                 if (currentKey === undefined) {
                     const key = await generateAESKey();
                     localStorage.setItem(`privKey-${keyData.groupId}`, JSON.stringify(key));
                     console.log(`KEY GERADA ==> ${JSON.stringify(key)}`);
-                    socket.emit('joinRoom', keyData.groupId);
                 }
             } else {
-                const decrypter = new JSEncrypt();
-                decrypter.setPrivateKey(localStorage.getItem('privateKey'));
-                const decryptedKey = decrypter.decrypt(keyData.key);
+                console.log(`keyData.key ==> ${keyData.key}`);
+                console.log(`localStorage.getItem('privateKey') ==> ${localStorage.getItem('privateKey')}`);
+                const decryptedKey = await RSADecrypt(keyData.key, localStorage.getItem('privateKey'));
                 console.log(`KEY RECEBIDA ==> ${decryptedKey}`);
                 if (decryptedKey !== null && decryptedKey !== undefined) {
                     localStorage.setItem(`privKey-${keyData.groupId}`, decryptedKey);
-                    socket.emit('joinRoom', keyData.groupId);
                 }
             }
+            socket.emit('joinRoom', keyData.groupId);
         })
 
-        socket.on("requestGroupKey", (requestData) => {
+        socket.once("requestGroupKey", async (requestData) => {
             const groupKey = localStorage.getItem(`privKey-${requestData.groupId}`);
             console.log(`GROUP KEY TO ENCRYPT ==> ${groupKey}`);
             if (groupKey == null) {
@@ -167,9 +132,7 @@ export function SingleChat() {
                     key: null
                 });
             } else {
-                const encrypter = new JSEncrypt();
-                encrypter.setPublicKey(requestData.requesterPubKey);
-                const encryptedKey = encrypter.encrypt(`${groupKey}`);
+                const encryptedKey = await RSAEncrypt(`${groupKey}`, requestData.requesterPubKey);
                 console.log(`ENCRYPTED KEY ==> ${encryptedKey}`);
 
                 socket.emit("onKeySend", {
@@ -180,36 +143,46 @@ export function SingleChat() {
             }
         })
 
-        socket.on("connected", (groupsData) => {
+        socket.once("connected", (groupsData) => {
             setSaveGroups(groupsData);
         })
 
-        socket.on("emitRoom", (newMessage) => {
+        socket.on("emitRoom", async (newMessage) => {
+            console.log("callback chamado");
             const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
 
             if (!userData) {
                 navigate("/")
             }
-            if (newMessage.senderEmail !== userData.email) {
-                if (newMessage.receiverId.includes("@")) {
-                    const decrypter = new JSEncrypt();
-                    decrypter.setPrivateKey(localStorage.getItem('privateKey'));
-                    const decryptedMessage = decrypter.decrypt(newMessage.message);
-                    setChatsQueue((prevMensagens) => [
-                        ...prevMensagens,
-                        { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
-                    ]);
-                } else {
-                    const groupKey = JSON.parse(localStorage.getItem(`privKey-${newMessage.receiverId}`)) || undefined
-                    console.log(groupKey);
-                    if (groupKey !== undefined) {
-                        var bytes = CryptoJS.AES.decrypt(newMessage.message, groupKey.k);
-                        var decryptedMessage = bytes.toString(CryptoJS.enc.Utf8);
+
+            if (newMessage.senderEmail !== userData.email && newMessage.senderEmail !== chatAtivo) {
+
+                const messageVerified = await verifyMessage(newMessage.message, newMessage.signature, newMessage.senderEmail, newMessage);
+
+                if (messageVerified) {
+                    if (newMessage.receiverId.includes("@")) {
+                        const decryptedMessage = await RSADecrypt(newMessage.message, localStorage.getItem('privateKey'));
+                        console.log(newMessage);
+                        console.log(decryptedMessage);
                         setChatsQueue((prevMensagens) => [
                             ...prevMensagens,
                             { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
                         ]);
+                    } else {
+                        const groupKey = JSON.parse(localStorage.getItem(`privKey-${newMessage.receiverId}`)) || undefined
+                        console.log(groupKey);
+                        if (groupKey !== undefined) {
+                            const decryptedMessage = AESDecrypt(newMessage.message, groupKey.k);
+                            setChatsQueue((prevMensagens) => [
+                                ...prevMensagens,
+                                { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
+                            ]);
+                        }
                     }
+                } else {
+                    console.log(`MENSAGEM RECEBIDA DE ${newMessage.senderEmail} NÃO VEIO DELE`);
+                    const decryptedMessage = await RSADecrypt(newMessage.message, localStorage.getItem('privateKey'));
+                    console.log(decryptedMessage);
                 }
 
             }
@@ -218,7 +191,10 @@ export function SingleChat() {
     }, []);
 
     useEffect(() => {
+        console.log(`ChatsQueue ==> ${JSON.stringify(ChatsQueue)}`);
         let currentMessage = ChatsQueue.pop();
+        console.log(`currentMessage ==> ${currentMessage}`);
+        console.log(`ChatsQueue ==> ${JSON.stringify(ChatsQueue)}`);
         if (currentMessage) {
             if (currentMessage.receiverId.includes("@")) {
                 setNovosNomesQueue([...novosNomesQueue, currentMessage.senderEmail]);
@@ -306,8 +282,9 @@ export function SingleChat() {
     }, [saveGroups])
 
     const toggleChat = (chatTarget) => {
-        setChatAtivo(chatAtivo === chatTarget ? null : chatTarget);
-        navigate(`/chat/${chatTarget}`);
+        const target = chatAtivo === chatTarget ? null : chatTarget;
+        setChatAtivo(target);
+        navigate(`/chat/${target === null ? "" : target}`);
     };
 
 

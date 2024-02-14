@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import JSEncrypt from 'jsencrypt';
-import CryptoJS from 'crypto-js'
 import {
   ChatBoxContainer,
   MessageInput,
@@ -15,6 +13,7 @@ import {
   ExitGroupButton
 } from './style';
 import { socket } from '../../services/socket';
+import { AESDecrypt, AESEncrypt, RSADecrypt, RSAEncrypt, signMessage, verifyMessage } from '../../utils/handleCrypto';
 
 export function ChatBox({ chatEmail, handleGroupExit }) {
   const navigate = useNavigate();
@@ -28,7 +27,7 @@ export function ChatBox({ chatEmail, handleGroupExit }) {
     setMensagens([...mensagens, { texto, deUsuario }]);
   };
 
-  const handleEnviarMensagem = () => {
+  const handleEnviarMensagem = async () => {
     const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
 
     if (!userData) {
@@ -37,23 +36,24 @@ export function ChatBox({ chatEmail, handleGroupExit }) {
     if (mensagemAtual.trim() !== '') {
       let encryptedMessage = '';
       if (chatEmail.includes('@')) {
-        const encrypter = new JSEncrypt();
-        encrypter.setPublicKey(currentChatPubKey);
-        console.log(currentChatPubKey);
-        encryptedMessage = encrypter.encrypt(`${mensagemAtual}`);
+        encryptedMessage = await RSAEncrypt(`${mensagemAtual}`, currentChatPubKey);
       } else {
-        const groupKey = JSON.parse(localStorage.getItem(`privKey-${chatEmail}`))
-        encryptedMessage = CryptoJS.AES.encrypt(`${userData.name}: ${mensagemAtual}`, groupKey.k).toString();
+        const groupKey = JSON.parse(localStorage.getItem(`privKey-${chatEmail}`));
+        encryptedMessage = AESEncrypt(`${userData.name}: ${mensagemAtual}`, groupKey.k);
 
       }
       console.log(`mensagem criptografada ==> ${encryptedMessage}`);
       enviarMensagemLocal(mensagemAtual, true);
-      // enviarMensagemBot();
+
+      const signature = await signMessage(encryptedMessage, localStorage.getItem("privateKey"));
+
       socket.emit("emitRoom", {
         senderEmail: userData.email,
         message: encryptedMessage,
         receiverId: chatEmail,
+        signature: signature
       });
+
       setMensagemAtual('');
     }
   };
@@ -67,7 +67,7 @@ export function ChatBox({ chatEmail, handleGroupExit }) {
       console.log(`${chatEmail} private key ==> ${JSON.stringify(privateKey)}`);
       setIsOnline(true);
     } else {
-      socket.on('isOnline', (onlineUser) => {
+      socket.once('isOnline', (onlineUser) => {
         if (onlineUser.email === chatEmail) {
           setIsOnline(onlineUser.online);
           if (onlineUser.online) {
@@ -79,30 +79,34 @@ export function ChatBox({ chatEmail, handleGroupExit }) {
       socket.emit('isOnline', chatEmail);
     }
 
-    socket.on("emitRoom", (newMessage) => {
+    socket.on("emitRoom", async (newMessage) => {
       const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
 
       if (!userData) {
         navigate("/")
       }
 
-      if (newMessage.senderEmail === chatEmail) {
-        const decrypter = new JSEncrypt();
-        decrypter.setPrivateKey(localStorage.getItem('privateKey'));
-        const decryptedMessage = decrypter.decrypt(newMessage.message);
-        setMessageQueue((prevMensagens) => [
-          ...prevMensagens,
-          { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
-        ]);
-      }
-      if (newMessage.receiverId === chatEmail && newMessage.senderEmail !== JSON.parse(localStorage.getItem("userData")).email) {
-        const groupKey = JSON.parse(localStorage.getItem(`privKey-${newMessage.receiverId}`))
-        var bytes = CryptoJS.AES.decrypt(newMessage.message, groupKey.k);
-        var decryptedMessage = bytes.toString(CryptoJS.enc.Utf8);
-        setMessageQueue((prevMensagens) => [
-          ...prevMensagens,
-          { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
-        ]);
+      const messageVerified = verifyMessage(newMessage.message, newMessage.signature, newMessage.senderEmail, newMessage);
+      if (messageVerified) {
+        if (newMessage.senderEmail === chatEmail && newMessage.receiverId.includes('@')) {
+          const decryptedMessage = await RSADecrypt(newMessage.message, localStorage.getItem('privateKey'));
+          setMessageQueue((prevMensagens) => [
+            ...prevMensagens,
+            { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
+          ]);
+        }
+        if (newMessage.receiverId === chatEmail && newMessage.senderEmail !== JSON.parse(localStorage.getItem("userData")).email) {
+          const groupKey = JSON.parse(localStorage.getItem(`privKey-${newMessage.receiverId}`))
+          const decryptedMessage = AESDecrypt(newMessage.message, groupKey.k);
+          setMessageQueue((prevMensagens) => [
+            ...prevMensagens,
+            { texto: decryptedMessage, deUsuario: false, senderEmail: newMessage.senderEmail, receiverId: newMessage.receiverId },
+          ]);
+        }
+      } else {
+        console.log(`MENSAGEM RECEBIDA DE ${newMessage.senderEmail} NÃO VEIO DELE`);
+        const decryptedMessage = await RSADecrypt(newMessage.message, localStorage.getItem('privateKey'));
+        console.log(decryptedMessage);
       }
     });
     // eslint-disable-next-line

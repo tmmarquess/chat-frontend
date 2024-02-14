@@ -14,6 +14,7 @@ import {
 } from "./style";
 import { api } from "../../services/axios";
 import { socket } from "../../services/socket";
+import { generateAESKey } from "../../utils/handleCrypto";
 
 export function GroupChatButton() {
   const [isPopupOpen, setPopupOpen] = useState(false);
@@ -29,14 +30,6 @@ export function GroupChatButton() {
   const cancel = () => {
     setPopupOpen(false);
   };
-
-  const generateAESKey = async () => {
-    const key = await crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
-
-    const exportedKey = await crypto.subtle.exportKey("jwk", key);
-
-    return exportedKey;
-  }
 
   const createGroup = () => {
 
@@ -56,7 +49,7 @@ export function GroupChatButton() {
         selectedEmails,
       };
 
-      socket.on('groupCreated', (createdGroupData) => {
+      socket.once('groupCreated', (createdGroupData) => {
         console.log(`GROUP KEY ==> ${JSON.stringify(key)}`);
         localStorage.setItem(`privKey-${createdGroupData.id}`, JSON.stringify(key));
         navigate(`/chat/${createdGroupData.id}`)
