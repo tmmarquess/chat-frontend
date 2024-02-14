@@ -124,6 +124,7 @@ export function ChatBox({ chatEmail, handleGroupExit }) {
       }
 
     }
+    // eslint-disable-next-line
   }, [messageQueue]);
 
 
