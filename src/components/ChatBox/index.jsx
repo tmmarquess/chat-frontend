@@ -67,7 +67,7 @@ export function ChatBox({ chatEmail, handleGroupExit }) {
       console.log(`${chatEmail} private key ==> ${JSON.stringify(privateKey)}`);
       setIsOnline(true);
     } else {
-      socket.once('isOnline', (onlineUser) => {
+      socket.on('isOnline', (onlineUser) => {
         if (onlineUser.email === chatEmail) {
           setIsOnline(onlineUser.online);
           if (onlineUser.online) {
@@ -115,7 +115,14 @@ export function ChatBox({ chatEmail, handleGroupExit }) {
   useEffect(() => {
     let currentMessage = messageQueue.pop();
     if (currentMessage) {
-      setMensagens((prevMensagens) => [...prevMensagens, currentMessage]);
+      if (mensagens.length === 0) {
+        setMensagens((prevMensagens) => [...prevMensagens, currentMessage]);
+      } else {
+        if (currentMessage.texto !== mensagens[mensagens.length - 1].texto) {
+          setMensagens((prevMensagens) => [...prevMensagens, currentMessage]);
+        }
+      }
+
     }
   }, [messageQueue]);
 

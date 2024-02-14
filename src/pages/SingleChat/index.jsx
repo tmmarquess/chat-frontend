@@ -102,7 +102,7 @@ export function SingleChat() {
             socket.emit("setup", { userData, publicKey });
         }
 
-        socket.once("onKeySend", async (keyData) => {
+        socket.on("onKeySend", async (keyData) => {
             const currentKey = localStorage.getItem(`privKey-${keyData.groupId}`) || undefined
             if (keyData.key === null) {
                 if (currentKey === undefined) {
@@ -111,8 +111,6 @@ export function SingleChat() {
                     console.log(`KEY GERADA ==> ${JSON.stringify(key)}`);
                 }
             } else {
-                console.log(`keyData.key ==> ${keyData.key}`);
-                console.log(`localStorage.getItem('privateKey') ==> ${localStorage.getItem('privateKey')}`);
                 const decryptedKey = await RSADecrypt(keyData.key, localStorage.getItem('privateKey'));
                 console.log(`KEY RECEBIDA ==> ${decryptedKey}`);
                 if (decryptedKey !== null && decryptedKey !== undefined) {
@@ -122,7 +120,7 @@ export function SingleChat() {
             socket.emit('joinRoom', keyData.groupId);
         })
 
-        socket.once("requestGroupKey", async (requestData) => {
+        socket.on("requestGroupKey", async (requestData) => {
             const groupKey = localStorage.getItem(`privKey-${requestData.groupId}`);
             console.log(`GROUP KEY TO ENCRYPT ==> ${groupKey}`);
             if (groupKey == null) {
@@ -143,12 +141,11 @@ export function SingleChat() {
             }
         })
 
-        socket.once("connected", (groupsData) => {
+        socket.on("connected", (groupsData) => {
             setSaveGroups(groupsData);
         })
 
         socket.on("emitRoom", async (newMessage) => {
-            console.log("callback chamado");
             const userData = JSON.parse(localStorage.getItem("userData")) || undefined;
 
             if (!userData) {
@@ -162,7 +159,6 @@ export function SingleChat() {
                 if (messageVerified) {
                     if (newMessage.receiverId.includes("@")) {
                         const decryptedMessage = await RSADecrypt(newMessage.message, localStorage.getItem('privateKey'));
-                        console.log(newMessage);
                         console.log(decryptedMessage);
                         setChatsQueue((prevMensagens) => [
                             ...prevMensagens,
@@ -191,19 +187,30 @@ export function SingleChat() {
     }, []);
 
     useEffect(() => {
-        console.log(`ChatsQueue ==> ${JSON.stringify(ChatsQueue)}`);
         let currentMessage = ChatsQueue.pop();
-        console.log(`currentMessage ==> ${currentMessage}`);
-        console.log(`ChatsQueue ==> ${JSON.stringify(ChatsQueue)}`);
         if (currentMessage) {
             if (currentMessage.receiverId.includes("@")) {
                 setNovosNomesQueue([...novosNomesQueue, currentMessage.senderEmail]);
-                const chatMessages = JSON.parse(localStorage.getItem(`messages-${currentMessage.senderEmail}`)) || []
-                localStorage.setItem(`messages-${currentMessage.senderEmail}`, JSON.stringify([...chatMessages, { texto: currentMessage.texto, deUsuario: false }]));
+                const chatMessages = JSON.parse(localStorage.getItem(`messages-${currentMessage.senderEmail}`)) || [];
+                if (chatMessages.length === 0) {
+                    localStorage.setItem(`messages-${currentMessage.senderEmail}`, JSON.stringify([...chatMessages, { texto: currentMessage.texto, deUsuario: false }]));
+                } else {
+                    if (currentMessage.texto !== chatMessages[chatMessages.length - 1].texto) {
+                        localStorage.setItem(`messages-${currentMessage.senderEmail}`, JSON.stringify([...chatMessages, { texto: currentMessage.texto, deUsuario: false }]));
+                    }
+                }
+
             } else {
                 setNovosNomesQueue([...novosNomesQueue, currentMessage.receiverId]);
                 const chatMessages = JSON.parse(localStorage.getItem(`messages-${currentMessage.receiverId}`)) || []
-                localStorage.setItem(`messages-${currentMessage.receiverId}`, JSON.stringify([...chatMessages, { texto: currentMessage.texto, deUsuario: false, senderEmail: currentMessage.senderEmail }]));
+                if (chatMessages.length === 0) {
+                    localStorage.setItem(`messages-${currentMessage.receiverId}`, JSON.stringify([...chatMessages, { texto: currentMessage.texto, deUsuario: false, senderEmail: currentMessage.senderEmail }]));
+                } else {
+                    if (currentMessage.texto !== chatMessages[chatMessages.length - 1].texto) {
+                        localStorage.setItem(`messages-${currentMessage.receiverId}`, JSON.stringify([...chatMessages, { texto: currentMessage.texto, deUsuario: false, senderEmail: currentMessage.senderEmail }]));
+                    }
+                }
+
             }
         }
         // eslint-disable-next-line

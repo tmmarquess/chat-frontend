@@ -49,7 +49,7 @@ export function GroupChatButton() {
         selectedEmails,
       };
 
-      socket.once('groupCreated', (createdGroupData) => {
+      socket.on('groupCreated', (createdGroupData) => {
         console.log(`GROUP KEY ==> ${JSON.stringify(key)}`);
         localStorage.setItem(`privKey-${createdGroupData.id}`, JSON.stringify(key));
         navigate(`/chat/${createdGroupData.id}`)
