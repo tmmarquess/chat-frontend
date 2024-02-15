@@ -12,6 +12,7 @@ import {
 } from "./style";
 
 import { api } from "../../services/axios";
+import regexSenha from "../../utils/regex";
 
 
 export function CreateAccount() {
@@ -26,6 +27,12 @@ export function CreateAccount() {
 
         if (password !== confirmPassword) {
             alert("Passwords do not match");
+            return;
+        }
+
+        if (!regexSenha.test(password)) {
+            alert("A senha deve conter todos os requisitos:\n> Mínimo de 8 caracteres\n> Pelo menos 1 letra maiúscula, e 1 letra minúscula\n> um numero\n> Um caractere especial");
+            return;
         }
 
         api.post('/users', {
