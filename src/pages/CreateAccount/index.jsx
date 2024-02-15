@@ -40,6 +40,7 @@ export function CreateAccount() {
             email: email,
             password: password,
         }).then((response) => {
+            alert("Verifique seu email para confirmar seu cadastro!");
             navigate('/')
         }).catch((err) => {
             console.error("ops! ocorreu um erro" + err);
